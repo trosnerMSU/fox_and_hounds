@@ -1,0 +1,6 @@
+name: fox_and_hounds
+channels:
+  - defaults
+dependencies:
+  - python=3.12
+prefix: /home/chiva/miniconda3/envs/fox_and_hounds
