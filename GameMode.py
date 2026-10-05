@@ -5,7 +5,7 @@ class GameMode:
     def __init__(self, choice, iters):
         self.mode = GameModeType(choice)
         self.iters = iters
-        if self.iters == 1:
+        if self.iters >= 1 and self.iters <= 3:
             self.display = True
         else:
             self.display = False

@@ -30,11 +30,7 @@ class GameBoardExecutor:
         return results
 
     def run_game(self, game_board, game_mode):
-        fox_ai = game_mode.fox_ai
-        hounds_ai = game_mode.hounds_ai
-        print("Game is executing...")
-        game_results = GameResults()
-        game_results.declare_winner(GameWinnerType.FOX)
+        game_results = game_board.run(game_mode)
         return game_results
 
             
