@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 from matplotlib import transforms
 from matplotlib.patches import Polygon, Circle
+from IPython.display import clear_output
 
 import numpy as np
 import time
@@ -27,21 +28,14 @@ class GameBoard:
             (0, 4), (2, 4), (4, 4),
             (1, 5), (3, 5), (5, 5)
         ]
+        self.fox_goal_state = (5, 5)
 
-    def get_timestamp(self):
-        return time.perf_counter()
+    def get_next_fox_moves(self, position=None):
+        if position is None:
+            position = self.fox.get_position()
 
-    def get_elapsed_time(self, start, end):
-        return end - start
-
-    def get_next_fox_moves(self):
-        # get all possible new positions
-        new_positions = [
-            (self.fox.row + 1, self.fox.col + 1),
-            (self.fox.row + 1, self.fox.col - 1),
-            (self.fox.row - 1, self.fox.col + 1),
-            (self.fox.row - 1, self.fox.col - 1)
-        ]
+        # get all fox neighbor squares
+        new_positions = self.get_fox_neighbors(position)
 
         # only include valid new positions
         valid_next_positions = [
@@ -51,17 +45,17 @@ class GameBoard:
 
         return valid_next_positions
 
-    def get_next_hound_moves(self, hound):
-        # first, grab hound index (confirms this hound exists)
-        hound_index = self.hounds.index(hound)
-
-        # get all possible new positions
-        hound = self.hounds[hound_index]
-        new_positions = [
-            (hound.row - 1, hound.col - 1),
-            (hound.row + 1, hound.col - 1),
-            (hound.row - 1, hound.col + 1)
+    def get_fox_neighbors(self, position):
+        return [
+            (position[0] + 1, position[1] + 1),
+            (position[0] + 1, position[1] - 1),
+            (position[0] - 1, position[1] + 1),
+            (position[0] - 1, position[1] - 1)
         ]
+
+    def get_next_hound_moves(self, position):
+        # get hound neighbors
+        new_positions = self.get_hound_neighbors(position)
 
         # include valid positions
         valid_next_positions = [
@@ -70,6 +64,13 @@ class GameBoard:
         ]
 
         return valid_next_positions
+
+    def get_hound_neighbors(self, position):
+        return [
+            (position[0] - 1, position[1] - 1),
+            (position[0] + 1, position[1] - 1),
+            (position[0] - 1, position[1] + 1)
+        ]
 
 
     def get_available_squares(self):
@@ -89,6 +90,47 @@ class GameBoard:
 
         return available_squares
 
+    def run(self, mode):
+        fox_ai = mode.fox_ai
+        hounds_ai = mode.hounds_ai
+        count = 0
+        max_loops = 1000
+
+        results = GameResults()
+        while not results.finished:
+            if count >= max_loops:
+                raise ValueError("Max loop iterations exceeded")
+            
+            # fox goes first
+            fox_move = fox_ai.choose_move(self)
+            if fox_move:
+                fox, pos = fox_move
+                self.move_fox(pos)
+                if (mode.display):
+                    time.sleep(0.25)
+                    self.display()
+
+            # check for winner
+            self.check_winner(results)
+
+            # hounds go second
+            hounds_move = hounds_ai.choose_move(self)
+            if hounds_move:
+                hound, pos = hounds_move
+                self.move_hound(hound, pos)
+                if (mode.display):
+                    time.sleep(0.25)
+                    self.display()
+
+            # check for winner
+            self.check_winner(results)
+
+            # increment count
+            count += 1
+
+        # return with the game results
+        return results
+
     def move_fox(self, new_pos):
         # validate that the new position is a valid next move
         next_possible_moves = self.get_next_fox_moves()
@@ -99,39 +141,29 @@ class GameBoard:
 
     def move_hound(self, hound, new_pos):
         # validate that the new position is a valid next move
-        next_possible_moves = self.get_next_hound_moves(hound)
+        next_possible_moves = self.get_next_hound_moves(hound.get_position())
         if (new_pos in next_possible_moves):
             self.hounds[self.hounds.index(hound)].set_position(new_pos[0], new_pos[1])
         else:
             raise ValueError("Failed to move hound")
 
-    def run(self, mode):
-        fox_ai = mode.fox_ai
-        hounds_ai = mode.hounds_ai
-
-        results = GameResults()
-        while not results.finished:
-            # fox goes first
-            fox_move = fox_ai.choose_move(self)
-            if fox_move:
-                fox, pos = fox_move
-                self.move_fox(pos)
-
-            # hounds go second
-            hounds_move = hounds_ai.choose_move(self)
-            if hounds_move:
-                hound, pos = hounds_move
-                self.move_hound(hound, pos)
-
-            # check for winner
-            # self.check_winner(results)
+    def check_winner(self, results):
+        if self.check_fox_winner():
             results.declare_winner(GameWinnerType.FOX)
+        elif self.check_hounds_winner():
+            results.declare_winner(GameWinnerType.HOUNDS)
 
-        # return with the game results
-        return results
+    def check_fox_winner(self):
+        return self.fox.get_position() == self.fox_goal_state
 
+    def check_hounds_winner(self):
+        next_fox_moves = self.get_next_fox_moves()
+        if not next_fox_moves:
+            return True
+        return False
 
     def display(self):
+        clear_output(wait=True)
         board = np.indices((6, 6)).sum(axis=0) % 2
         fig, ax = plt.subplots()
 

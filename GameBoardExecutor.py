@@ -12,12 +12,9 @@ class GameBoardExecutor:
         with ThreadPoolExecutor() as executor:
             futures = []
             for i in range(game_mode.iters):
-                board = GameBoard()
-
                 # add each game execution to thread pool
                 future = executor.submit(
                     self.run_game,
-                    board,
                     game_mode
                 )
 
@@ -29,8 +26,8 @@ class GameBoardExecutor:
             
         return results
 
-    def run_game(self, game_board, game_mode):
-        game_results = game_board.run(game_mode)
+    def run_game(self, game_mode):
+        game_results = GameBoard().run(game_mode)
         return game_results
 
             
