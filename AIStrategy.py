@@ -36,7 +36,7 @@ class HoundsMinimaxAI(AIStrategy):
         best_moves = []
 
         # how many turns to look ahead
-        depth = 2
+        depth = 4
 
         for hound_index, hound in enumerate(board.hounds):
             valid_moves = board.get_next_hound_moves(hound.get_position())
