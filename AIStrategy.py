@@ -2,6 +2,8 @@ from abc import ABC, abstractmethod
 from collections import deque
 import random
 
+from GameResults import GameResults, GameWinnerType
+
 class AIStrategy:
     @abstractmethod
     def choose_move(self, board):
@@ -28,7 +30,91 @@ class HoundsRandomAI(AIStrategy):
 
 class HoundsMinimaxAI(AIStrategy):
     def choose_move(self, board):
-        pass
+        best_score = float("-inf")
+
+        # track tie breaker best moves
+        best_moves = []
+
+        # how many turns to look ahead
+        depth = 2
+
+        for hound_index, hound in enumerate(board.hounds):
+            valid_moves = board.get_next_hound_moves(hound.get_position())
+            for position in valid_moves:
+                simulated_board = board.copy()
+                simulated_hound = simulated_board.hounds[hound_index]
+
+                simulated_board.move_hound(simulated_hound, position)
+
+                score = self.minimax(simulated_board, depth - 1, False)
+
+                if score > best_score:
+                    best_score = score
+                    best_moves = [(hound_index, position)]
+                elif score == best_score:
+                    best_moves.append((hound_index, position))
+
+        if not best_moves:
+            return None
+        
+        hound_index, position = random.choice(best_moves)
+        return board.hounds[hound_index], position
+
+    def minimax(self, board, depth, maximizing_player):
+        game_results = GameResults()
+        board.check_winner(game_results)
+
+        if game_results.finished or depth == 0:
+            return self.evaluate(board, game_results)
+
+        # For MAXIMIZING Hounds turn
+        if maximizing_player:
+            best_score = float("-inf")
+            move_found = False
+            for hound_index, hound in enumerate(board.hounds):
+                valid_moves = board.get_next_hound_moves(hound.get_position())
+                for position in valid_moves:
+                    move_found = True
+                    simulated_board = board.copy()
+                    simulated_hound = simulated_board.hounds[hound_index]
+                    simulated_board.move_hound(simulated_hound, position)
+                    score = self.minimax(simulated_board, depth - 1, False)
+                    best_score = max(best_score, score)
+
+            if not move_found:
+                return self.evaluate(board, game_results)
+            
+            return best_score
+        
+        # for MINIMIZING Fox turn
+        else:
+            best_score = float("inf")
+            valid_moves = board.get_next_fox_moves()
+            if not valid_moves:
+                return self.evaluate(board, game_results)
+            for position in valid_moves:
+                simulated_board = board.copy()
+                simulated_board.move_fox(position)
+                score = self.minimax(simulated_board, depth - 1, True)
+                best_score = min(best_score, score)
+            
+            return best_score
+
+
+    def evaluate(self, board, game_results):
+        if game_results is not None:
+            if game_results.winner == GameWinnerType.HOUNDS:
+                return 1000
+            if game_results.winner == GameWinnerType.FOX:
+                return -1000
+            
+        goal_row, goal_col = board.fox_goal_state
+        fox_distance = (abs(board.fox.row - goal_row) + abs(board.fox.col - goal_col))
+
+        fox_moves = len(board.get_next_fox_moves())
+
+        return (fox_distance * 10) - (fox_moves * 2)
+
 
 class FoxRandomAI(AIStrategy):
     def choose_move(self, board):

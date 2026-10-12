@@ -7,6 +7,7 @@ import numpy as np
 import time
 from enum import Enum
 from typing import List, Tuple
+import copy
 
 from GamePieces import GamePiece, Fox, Hound
 from GameResults import GameResults, GameWinnerType
@@ -94,6 +95,7 @@ class GameBoard:
         fox_ai = mode.fox_ai
         hounds_ai = mode.hounds_ai
         count = 0
+        state_counts = {}
         max_loops = 1000
 
         results = GameResults()
@@ -112,6 +114,8 @@ class GameBoard:
 
             # check for winner
             self.check_winner(results)
+            if results.finished:
+                break
 
             # hounds go second
             hounds_move = hounds_ai.choose_move(self)
@@ -124,6 +128,28 @@ class GameBoard:
 
             # check for winner
             self.check_winner(results)
+            if results.finished:
+                break
+
+            # track repetitive states
+            state = (
+                (self.fox.row, self.fox.col),
+
+                tuple(
+                    sorted(
+                        (hound.row, hound.col)
+                        for hound in self.hounds
+                    )
+                )
+            )
+
+            state_counts[state] = state_counts.get(state, 0) + 1
+
+            # same board configuration occurred 50 times
+            if state_counts[state] >= 50:
+                results.finished = True
+                results.winner = GameWinnerType.DRAW
+                break
 
             # increment count
             count += 1
@@ -161,6 +187,9 @@ class GameBoard:
         if not next_fox_moves:
             return True
         return False
+
+    def copy(self):
+        return copy.deepcopy(self)
 
     def display(self):
         clear_output(wait=True)

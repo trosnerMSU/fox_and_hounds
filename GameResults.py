@@ -13,3 +13,4 @@ class GameWinnerType(Enum):
     NONE = 1
     FOX = 2
     HOUNDS = 3
+    DRAW = 4
