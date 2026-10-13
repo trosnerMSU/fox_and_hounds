@@ -97,11 +97,15 @@ class GameBoard:
         count = 0
         state_counts = {}
         max_loops = 1000
+        turns = 0
 
         results = GameResults()
         while not results.finished:
             if count >= max_loops:
                 raise ValueError("Max loop iterations exceeded")
+
+            # record turns
+            turns = count + 1
             
             # fox goes first
             fox_move = fox_ai.choose_move(self)
@@ -113,7 +117,7 @@ class GameBoard:
                     self.display()
 
             # check for winner
-            self.check_winner(results)
+            self.check_winner(results, turns)
             if results.finished:
                 break
 
@@ -127,7 +131,7 @@ class GameBoard:
                     self.display()
 
             # check for winner
-            self.check_winner(results)
+            self.check_winner(results, turns)
             if results.finished:
                 break
 
@@ -145,10 +149,11 @@ class GameBoard:
 
             state_counts[state] = state_counts.get(state, 0) + 1
 
-            # same board configuration occurred 50 times
-            if state_counts[state] >= 50:
+            # same board configuration occurred 100 times
+            if state_counts[state] >= 100:
                 results.finished = True
                 results.winner = GameWinnerType.DRAW
+                results.turns = turns
                 break
 
             # increment count
@@ -173,11 +178,11 @@ class GameBoard:
         else:
             raise ValueError("Failed to move hound")
 
-    def check_winner(self, results):
+    def check_winner(self, results, turns=None):
         if self.check_fox_winner():
-            results.declare_winner(GameWinnerType.FOX)
+            results.declare_winner(GameWinnerType.FOX, turns)
         elif self.check_hounds_winner():
-            results.declare_winner(GameWinnerType.HOUNDS)
+            results.declare_winner(GameWinnerType.HOUNDS, turns)
 
     def check_fox_winner(self):
         return self.fox.get_position() == self.fox_goal_state

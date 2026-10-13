@@ -4,10 +4,12 @@ class GameResults:
     def __init__(self):
         self.finished = False
         self.winner = GameWinnerType.NONE
+        self.turns = 0
 
-    def declare_winner(self, winner):
+    def declare_winner(self, winner, turns=None):
         self.finished = True
         self.winner = winner
+        self.turns = turns
 
 class GameWinnerType(Enum):
     NONE = 1
