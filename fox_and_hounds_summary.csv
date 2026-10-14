@@ -1,0 +1,5 @@
+Condition,Fox Wins,Hound Wins,Draws,Average Turns,Median Turns
+Random Fox / Random Hounds,65,35,0,44.54,31.0
+Random Fox / Minimax Hounds,0,100,0,7.75,7.0
+BFS Fox / Random Hounds,75,25,0,15.48,15.0
+BFS Fox / Minimax Hounds,0,77,23,56.54,14.0
